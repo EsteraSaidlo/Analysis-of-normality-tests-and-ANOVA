@@ -1,0 +1,478 @@
+---
+title: "Projekt 1"
+author: "Estera Said³o"
+date: "11 listopada 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<h2><center><b>1. Moc testów normalnoœci</b></h2></center><br/>
+
+
+###1.1 Wstêp i przedstawienie danych
+
+Za³o¿enie o rozk³adzie normalnym zmiennych jest podstaw¹ wielu klasycznych technik modelowania, miêdzy innymi analizy wariancji. Dlatego zg³êbianie technik testowania tego za³o¿enia jest tak popularne. <br/>
+Przedmiotem badania jest poddanie analizie 6 testów zgodnoœci pochodz¹cych z ró¿nych grup, które ró¿ni¹ siê sposobem konstrukcji statystyki testowej i zbadanie, dla którego z 3 wybranych rozk³adów(t-Studenta, wyk³adniczy, jednostajny) s¹ najefektywniejsze.<br/>
+Przed rozpoczêciem analizy warto przyjrzeæ siê specyfikacji testów poddawanych analizie.<br/>
+
+1.<b> test Shapiro-Wilka </b>- jest uwa¿any za najlepszy test do badania normalnoœci rozk³adu ze wzgledu na jego du¿¹ moc i mo¿liwoœæ u¿ycia przy niewielkiej próbie. Ten test bazuje na spostrze¿eniu, i¿ analizuj¹c dopasowanie próbnego zbioru danych do rozk³adu normalnego jest podobne do zadania liniowej regresji. <br/>
+
+2.<b> test Jarque-Bera </b>- jest testem opartym o momenty z próby. Wykorzystuje specyficzn¹ w³aœciwoœæ rozk³adu normalnego, tzn. skoœnoœæ = 0 i kurtozê = 3. Niestety przy niewielkich próbach test traci na niedok³adnym oszcowaniu wartoœci krytycznych.<br/>
+
+3.<b> test Pearsona</b> - jest to test oparty o statystykê chi-kwadrat, która dla prawdziwej H0 ma asymptotyczny rozk³ad chi-kwadrat. Przybli¿enie rozk³adem asymptotycznym ma sens, gdy obserwowana liczebnoœæ obserwacji w klasie jest co najmniej 10.<br/>
+
+4.<b> test Andersona-Darlinga</b> - jest to test, który bada zgodnoœæ z rozk³adem normalnym przez ocenê odleg³oœci pomiêdzy dystrybuant¹ empiryczn¹ a dystrybuant¹ rozk³adu normalnego. Ma wiêksz¹ czu³oœæ w "ogonach" testowanego rozk³adu.<br/>
+
+5.<b> test Lillieforsa</b> - tak jak test Andersona-Darlinga opiera siê na odleg³oœciach pomiêdzy dystrybuantami. Jest ulepszon¹ wersj¹ testu Ko³mogorowa-Smirnowa, gdy¿ w przeciwieñstwie do niego pozwala na badanie zgodnoœci z rodzin¹ rozk³adów normalnych, bez znajomoœci parametrów œredniej i odchylenia standardowego.<br/>
+
+6.<b> test SJ</b> - jest to test oparty o statystykê SJ(S od "standard deviation"" i J od "average absolute deviation from the median"). Jest testem kierunkowym, badajacym ciê¿ko-ogonowoœæ rozk³adu.<br/>
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#³adowanie niezbêdnych bibliotek
+library(stats)
+library(dplyr)
+library(normtest)
+library(tseries)
+library(nortest)
+library(fBasics)
+library(ggplot2)
+library(reshape2)
+library(readxl)
+library(car)
+library(tidyr)
+library(gplots)
+library(haven)
+library(lsr)
+library(sjstats)
+library(kableExtra)
+library(gridExtra)
+library(cowplot)
+library(lawstat)
+```
+
+W celu postawienia hipotez dotycz¹cych mocy testów, warto przyjrzeæ siê wykresom gêstoœci poszczególnych rozk³adów dla poszczególnych d³ugoœci próby.<br/>
+
+<center><h4><b>gêstoœci rozk³adu t-Studenta</b></h4></center>
+<br/>
+```{r, echo=FALSE,fig.align = 'center', out.extra='angle=90',message=FALSE, warning=FALSE}
+par(mfrow=c(2,2))
+plot(density(rt(8,2)), type = "l", lwd = 3, las = 1, col = "red3", main = "n = 8")
+plot(density(rt(18,2)), type = "l", lwd = 3, las = 1, col = "red3", main = "n = 18")
+plot(density(rt(35,2)), type = "l", lwd = 3, las = 1, col = "red3", main = "n = 35")
+plot(density(rt(70,2)), type = "l", lwd = 3, las = 1, col = "red3", main = "n = 70")
+
+```
+<br/>
+<center><h4><b>gêstoœci rozk³adu jednostajnego</b></h4></center>
+<br/>
+```{r, echo=FALSE, fig.align = 'center', out.extra='angle=90', message=FALSE, warning=FALSE}
+par(mfrow=c(2,2))
+plot(density(runif(8)), type = "l", lwd = 3, las = 1, col = "blue", main = "n = 8")
+plot(density(runif(18)), type = "l", lwd = 3, las = 1, col = "blue", main = "n = 18")
+plot(density(runif(35)), type = "l", lwd = 3, las = 1, col = "blue", main = "n = 35")
+plot(density(runif(70)), type = "l", lwd = 3, las = 1, col = "blue", main = "n = 70")
+
+```
+<br/>
+<center><h4><b>gêstoœci rozk³adu wyk³adniczego</b></h4></center>
+<br/>
+```{r, echo=FALSE, fig.align = 'center', out.extra='angle=90', message=FALSE, warning=FALSE}
+par(mfrow=c(2,2))
+plot(density(rexp(8)), type = "l", lwd = 3, las = 1, col = "purple", main = "n = 8", position = "center")
+plot(density(rexp(18)), type = "l", lwd = 3, las = 1, col = "purple", main = "n = 18", position = "center")
+plot(density(rexp(35)), type = "l", lwd = 3, las = 1, col = "purple", main = "n = 35", position = "center")
+plot(density(rexp(70)), type = "l", lwd = 3, las = 1, col = "purple", main = "n = 70", position = "center")
+
+```
+
+###1.2 Hipotezy badawcze
+
+Bior¹c pod uwagê informacje o testach i wykresy gêstoœci stawiam nastêpuj¹ce hipotezy: <br/>
+
+1. Dla ma³ych prób najlepszym testem do badania zgodnoœci z rozk³adem normalnym bêdzie test Shapiro-Wilka.<br/>
+2. Ze wzglêdu na wiêksz¹ czu³oœæ w "ogonach", test Andersona-Darlinga bêdzie mia³ du¿¹ moc dla rozk³adu t-Studenta i wyk³adniczego, ze wzglêdu na ich specyficzne, rozci¹gniête ogony.<br/>
+3. Ze wzglêdu na badanie "ciê¿ko-ogonowoœci" test SJ sprawdzi siê najlepiej dla rozk³adu t-Studenta.<br/>
+4. Moc testu bêdzie ros³a wraz ze wzrostem d³ugoœci próby ze wzglêdu na coraz mniejszy b³¹d losowy (populacja-próba).<br/>
+5. Test Jarque-Bera bêdzie mia³ du¿¹ moc dla du¿ych prób z rozk³adu t-Studenta oraz wyk³adniczego, poniewa¿ bazuje on na momentach z próby, a w tym przypadku rozk³ad wygl¹da na leptokurtyczny i w rozk³adzie wyk³adniczym mo¿na zauwa¿yæ skoœnoœæ prawostronn¹.<br/>
+6. Dla rozk³adu jednostajnego moc testów zgodnoœci Jargue-Bera i SJ bêdzie najmniejsza, ze wzglêdu na to, ¿e jest najbardziej symetryczny i ma ³agodne ogony, podobne do rozk³adu normalnego.<br/>
+
+Do zbadania mocy testów u¿yta zosta³a poni¿sza funkcja: <br/>
+```{r, message=FALSE, , fig.align = 'center', out.extra='angle=90',warning=FALSE}
+power <- function(tests, distributions, N=1000, alpha=0.05, n)
+{
+  eval(parse(text = paste0("test <- ", tests, ".test")))
+  eval(parse(text = paste0("dist <- r", distributions)))
+  
+  data_frame <- data.frame(rep(NA,N))
+    for (j in 1:N){
+    if (distributions == "t")
+      a <- do.call(dist, list(n,2))
+    else
+      a <- do.call(dist, list(n))
+    b <- do.call(test, list(a))
+    data_frame[j,1] <- b$p.value
+    }
+    powr <- data_frame[which(data_frame < alpha),1]
+    
+    return(length(powr)/N)
+}
+```
+<br/>
+Na potrzeby badania zosta³ przyjêty poziom istotnoœci = 0.05 oraz wektor d³ugoœci próby = c(8, 18, 35, 70).<br/> Moc jest wyznaczona na bazie 1 000 powtórzeñ. <br/>
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+dist <- list("t", "unif", "exp")
+testki <- list("shapiro", "jarque.bera", "pearson", "ad", "lillie", "sj")
+lengths <- list(8,18,35,70)
+
+#podawanie argumentów do funkcji
+results <- data.frame(NA)
+for (i in 1:length(testki)){
+  for (j in 1:length(dist)){
+    for (k in 1:length(lengths)){
+     results <- rbind(results,power(testki[[i]],dist[[j]],n=lengths[[k]]))
+     
+    }
+  }
+}
+
+results <- results[-1,]
+
+tests <- c("SW", "JB", "Chi2","AD", "LL", "SJ")
+n <- c(8,18,35,70)
+dist <- c("t", "unif", "exp")
+
+```
+
+```{r, echo=FALSE, message=FALSE,, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+#w zale¿noœci od d³ugoœci próby
+t_frame <- data.frame(results[c(1:4, 13:16, 25:28, 37:40, 49:52, 61:64)])
+unif_frame <- data.frame(results[c(5:8, 17:20, 29:32, 41:44, 53:56,65:68)])
+exp_frame <- data.frame(results[c(9:12, 21:24, 33:36, 45:48, 57:60, 69:72)])
+
+t_frame <- data.frame(t_frame[1:4,],t_frame[5:8,],t_frame[9:12,],t_frame[13:16,], t_frame[17:20,], t_frame[21:24,])
+unif_frame <- data.frame(unif_frame[1:4,],unif_frame[5:8,],unif_frame[9:12,],unif_frame[13:16,], unif_frame[17:20,], unif_frame[21:24,])
+exp_frame <- data.frame(exp_frame[1:4,],exp_frame[5:8,],exp_frame[9:12,],exp_frame[13:16,],exp_frame[17:20,], exp_frame[21:24,])
+
+rownames(t_frame) <- n
+colnames(t_frame) <- tests
+
+rownames(unif_frame) <- n
+colnames(unif_frame) <- tests
+
+rownames(exp_frame) <- n
+colnames(exp_frame) <- tests
+
+powerss <- data.frame(length = n, t = t_frame,unif = unif_frame,exp = exp_frame)
+
+pm <- melt(powerss, id.vars = "length",value.name = "power", variable.name = "dist_test")
+sep <- separate(pm, dist_test, c("dist", "test"))
+#stworzenie podgrup dla poszczególnych d³ugoœci
+n8 <- subset(sep, sep$length=="8")
+n18 <- subset(sep, sep$length=="18")
+n35 <- subset(sep, sep$length=="35")
+n70 <- subset(sep, sep$length=="70")
+
+#stworzenie podgrup dla poszczególnych rozk³adów
+t <- subset(sep, sep$dist=="t")  
+unif <- subset(sep, sep$dist=="unif") 
+exp <- subset(sep, sep$dist=="exp") 
+
+```
+
+###1.3 Przeprowadzenie badania
+
+####1.3.1 Wyniki testów w zale¿noœci od d³ugoœci próby dla ka¿dego z rozk³adów:
+
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+ggplot(t,aes(x=length, y=power, col=test)) + geom_line(size = 1) + ggtitle("Rozk³ad t-Studenta")
+```
+<br/>
+W przypadku ka¿dego testu moc roœnie wraz ze wzrostem d³ugoœci próby. Najlepiej prezentuje siê test SJ, który dla wszystkich badanych liczebnoœci najwiêksz¹ moc. Test Jarque-Bera na pocz¹tku jest najs³abszy, ale jego moc roœnie najszybciej i przy 35 obserwacjach jest ju¿ tak samo dobra jak w przypadku testu Sahpiro-Wilka oraz Andersona-Darlinga. Dla tego rozk³adu najgorzej wypada test Chi2.<br/>
+
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+ggplot(unif,aes(x=length, y=power, col=test)) + geom_line(size = 1) + ggtitle("Rozk³ad jednostajny")
+```
+<br/>
+W wiêkszoœci testów moc roœnie razem z d³ugoœci¹ próby, jednak ten wzrost jest powolny. Wyj¹tkiem jest test SJ, który jako jedyny maleje i przy 18 obserwacjach spada do 0. Test Jarque-Bera roœnie najwolniej, gdy¿ dopiero przy oko³o 40 obserwacjach mo¿na zauwa¿yæ "odbicie siê" od 0. Najlepiej wypada test Shapiro-Wilka i Andersona-Darlinga.<br/>
+
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+ggplot(exp,aes(x=length, y=power, col=test)) + geom_line(size = 1) + ggtitle("Rozk³ad wyk³adniczy")
+```
+<br/>
+Moce testów rosn¹ bardzo szybko, najlepiej wypada test Shapiro-Wilka, który ju¿ przy 35 obserwacjach osi¹ga 100% moc. Dla 70 obserwacji ka¿dy test ma wartoœæ 1, poza testem SJ, który w tym przypadku roœnie najwolniej.<br/>
+
+####1.3.2 Wyniki testów w zale¿noœci od rozk³adu badanej cechy:
+
+Wykresy przedstawiaj¹ sumê mocy wszystkich testów z rozró¿nieniem na to jak¹ czêœci¹ sumy jest moc danego testu.<br/>
+
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+ggplot(n8,aes(x=dist, y=power)) + geom_bar( stat="identity", aes(fill = test)) + ggtitle("8 obserwacji")
+```
+
+Przy 8 obserwacjach nie mo¿na spodziewaæ siê du¿ych mocy testów, poniewa¿ jest zbyt du¿e prawdopodobieñstwo b³êdu losowego. Widzimy, ¿e suma wszystkich 6 testów jest niewiele wiêksza od 1. Najlepsze dla ma³ych obserwacji s¹ testy Shapiro-Wilka oraz Andersona-Darlinga. Najgorzej wypada test Jarque-Bera, który dla rozk³adu jednostajnego nawet nie pojawia siê na histogramie, gdy¿ jego moc jest równa 0.<br/>
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+ggplot(n18,aes(x=dist, y=power)) + geom_bar( stat="identity", aes(fill = test)) + ggtitle("18 obserwacji")
+```
+
+Dla 18 obserwacji widaæ jak moce testów dla rozk³adu jednostajnego odbiegaj¹ od reszty rozk³adów. Mo¿na zauwa¿yæ tak¿e znaczny wzrost mocy testu Jarque-Bera dla rozk³adu wyk³adniczego oraz t-Studenta, który dla rozk³adu jednostajnego w dalszym ci¹gu ma moc równ¹ 0.<br/>
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+ggplot(n35,aes(x=dist, y=power)) + geom_bar( stat="identity", aes(fill = test)) + ggtitle("35 obserwacji")
+```
+
+Dla 35 obserwacji w rozk³adzie jednostajnym widaæ znacz¹cy wzrost mocy dla testu Shapiro-Wilka i Andersona-Darlinga, pozosta³e testy w dalszym ci¹gu maj¹ nisk¹ moc. W rozk³adzie wyk³adniczym mo¿na zauwa¿yæ, ¿e wszystkie testy maj¹ podobn¹ moc. <br/>
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+ggplot(n70,aes(x=dist, y=power)) + geom_bar( stat="identity", aes(fill = test)) + ggtitle("70 obserwacji")
+```
+
+Przy 70 obserwacjach widzimy, ¿e suma mocy dla rozk³adu wyk³adaniczego oraz t-Studenta jest bliska 6, wiêc prawie wszystkie testy maj¹ moc równ¹ 1. Rozk³ad jednostajny siêga nieco powy¿ej 2, wiêc te moce s¹ wci¹¿ niskie, choæ najlepiej prezentuje siê test SJ. Nie widaæ w dalszym ci¹gu testu Jarque-Bera, choæ na wykresie dotycz¹cym d³ugoœci próby dla ka¿dego z rozk³adów widzimy, ¿e przy 70 obserwacjach ma on tendencjê wzrostow¹.<br/>
+
+###1.4 Wnioski
+
++ Moc testu roœnie wraz ze wzrostem próby, poza testem SJ dla rozk³adu jednostajnego, dla którego zmala³a do 0.<br/>
+
++ Test Shapiro-Wilka jest najlepszy dla rozk³adu jednostajnego i wyk³adniczego, dla rozk³adu t-Studenta równie¿ ma du¿¹ moc, a ponadto jest jednym z najmocniejszych testów w przypadku ma³ej próbki. Jest wiêc testem, po który z pewnoœci¹ mo¿na siêgaæ, je¿eli nie ma siê wiedzy na temat specyfikacji poszczególnych testów. <br/>
+
++ Test Jarque-Bera jest najs³abszym testem dla ma³ych prób. Dla rozk³adu wyk³adniczego oraz t-Studenta radzi sobie bardzo dobrze, ale dopiero przy wiêkszych próbach. Jest testem, którego moc roœnie najszybciej wraz ze wzrostem d³ugoœci próby. Ma s³ab¹ moc dla rozk³adu jednostajnego, byæ mo¿e dlatego, ¿e rozk³ad jednostajny jest najbardziej symetryczny(ma skoœnoœæ w okolicy 0, podobnie jak rozk³ad normalny), a test Jarque-Bera opiera siê o momenty z próby. Jednak przy ok. 30 obserwacjach jego moc zaczyna powoli rosn¹æ.<br/>
+
++ Test Pearsona najlepiej sprawdza siê dla rozk³adu wyk³adniczego oraz dla wiêkszej próby. Nie warto go stosowaæ dla rozk³adu t-Studenta oraz jednostajnego, gdy¿ s¹ lepsze testy dla tych rozk³adów.<br/>
+
++ Test Andersona-Darlinga po teœcie Shapiro-Wilka jest drugim najmocniejszym testem. Dla ma³ych obserwacji sprawdza siê równie dobrze. Dobrze rozpoznaje rozk³ad jednostajny, byæ mo¿e ze wzglêdu na jego czu³oœæ w ogonach, dziêki czemu rozpoznaje nawet niewielkie ró¿nice. Z pewnoœci¹ mo¿na go spokojnie stosowaæ dla ka¿dego z badanych rozk³adów. <br/>
+
++ Test Lilieforsa jest dobry, choæ nie wyró¿nia siê jakoœ specjalnie na tle innych testów. Dla du¿ej próby(70 obserwacji) w rozk³adzie wyk³adniczym jest równie skuteczny co reszta testów, z wyj¹tkiem SJ.<br/> 
+
++ Test SJ jest najlepszym testem do badania zgodnoœci z rozk³adem normalnym dla rozk³adu t-Studenta, poniewa¿ bada ciê¿ko-ogonowoœæ rozk³adu, a w rozk³adzie t-Studenta ona wystêpuje. Z tego powodu ma s³ab¹ moc w przypadku rozk³adu jednostajnego, który ma ³agodne ogony, zbli¿one do ogonów rozk³adu normalnego.<br/>
+
+<h1><center><b>2. ANOVA</b></center></h1>
+
+###2.1 Wstêp i przedstawienie danych
+
+Analiza wariancji pozwala na zbadanie wp³ywu danych jakoœciowych na zmienn¹ iloœciow¹ lub przedzia³ow¹. Dziêki ANOVIE wieloczynnikowej mamy mo¿liwoœæ sprawdzenia efektu interakcji - jednoczesnego wp³ywu kilku czynników na zmienn¹ objaœnian¹. <br/>
+Celem mojej analizy bêdzie przeprowadzenie ANOVY dla cen mieszkañ we Wroc³awiu w zale¿noœci od:
+
+* liczby pokoi(1-4), 
+
+* dzielnicy, w której siê znajduje mieszkanie(Krzyki, Œródmieœcie, Biskupin),
+
+* typu budynku(kamienica, wie¿owiec, niski blok).
+
+Hipotez¹ zerow¹ ANOVY jest równoœæ œrednich w podgrupach, wiêc za hipotezê alternatywn¹ przyjmujê, ¿e œrednie ró¿ni¹ siê istotnie.<br/>
+W przypadku odrzucenia hipotezy zerowej zbadam za pomoc¹ testów post-hoc, które œrednie ró¿ni¹ siê miêdzy sob¹. A dziêki badaniu si³y efektów eksperymentalnych sprawdzê w jakim stopniu analiza wariancji objaœnia zachodz¹ce zale¿noœci. <br/>
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#wczytywanie danych
+mieszkania <- read_excel("mieszkania.xls")
+mieszkania <- mieszkania [,-3]
+attach(mieszkania)
+
+```
+Poni¿ej przedstawiam wykresy pude³kowe dla poszczególnych czynników:<br/>
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+#wykresy pude³kowe
+boxplot(mieszkania$cena~mieszkania$pokoi, main = "Cena mieszkania a liczba pokoi", col= rainbow(4))
+```
+<br/>
+Wykres przedstawiaj¹cy zale¿noœæ ceny mieszkania od liczby pokoi sugeruje, ¿e cena bêdzie ros³a wraz ze wzrostem liczby pokoi w mieszkaniu. Jednak bior¹c pod uwagê rozproszenie danych mo¿e siê okazaæ, ¿e np. za mieszkanie 2-pokojowe trzeba bêdzie zap³aciæ wiêcej ni¿ za mieszaknie 4-pokojowe. Podejrzewam, ¿e ró¿nice bêd¹ wynika³y z dzielnicy lub typu budynku, w którym znajduje siê mieszkanie.<br/>
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90',warning=FALSE}
+boxplot(mieszkania$cena~mieszkania$dzielnica, main = "Cena mieszkania a dzielnica", col= rainbow(4))
+```
+<br/>
+Na podstawie wykresu zale¿noœci ceny od dzielnicy widzimy, ¿e w dzielnicy Biskupin ceny mieszkañ s¹ najwiêksze, a maksymalna cena siêga blisko 300 000z³. W dzielnicy Krzyki i Sródmieœcie ceny wygl¹daj¹ podobnie, jednak w Sródmieœciu mo¿na zauwa¿yæ mniejsze rozproszenie cen.<br/>
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+boxplot(mieszkania$cena~mieszkania$`typ budynku`, main = "Cena mieszkania a typ budynku", col= rainbow(4))
+```
+<br/>
+Wykres zale¿noœci cen od typu budynku pokazuje, ¿e najtañsze s¹ mieszaknia w wie¿owcu, a najdro¿sze w niskim bloku.<br/>
+
+Spójrzmy jeszcze na wykresy œrednich w poszczególnych grupach:<br/>
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+par(mfrow=c(2,2))
+#wykresy œrednich
+plotmeans(mieszkania$cena~mieszkania$pokoi, xlab = "liczba pokoi", ylab = "cena mieszkania", col = "blue", barcol = "black")
+plotmeans(mieszkania$cena~mieszkania$dzielnica, xlab = "dzielnica", ylab = "cena mieszkania", col = "blue", barcol = "black")
+plotmeans(mieszkania$cena~mieszkania$`typ budynku`, xlab = "typ budynku", ylab = "cena mieszkania", col = "blue", barcol = "black") 
+
+```
+<br/>
+Wygl¹da na to, ¿e w ka¿dym przypadku œrednie ró¿ni¹ siê istotnie. Najmniejsza ró¿nica w œrednich wystêpuje miêdzy dzielnic¹ Krzyki a dzielnic¹ Œródmieœcie.<br/>
+
+Zobaczmy tak¿e, czy dane sugeruj¹ istnienie efektu interakcji pomiêdzy zmiennymi:<br/>
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+par(mfrow=c(2,2))
+#wykresy interakcji
+interaction.plot(mieszkania$dzielnica ,mieszkania$pokoi,mieszkania$cena, xlab = "dzielnica", ylab = "cena mieszkania", trace.label = "l. pokoi", col = "red")
+
+interaction.plot(mieszkania$`typ budynku` ,mieszkania$dzielnica,mieszkania$cena, xlab = "typ budynku", ylab = "cena mieszkania", trace.label = "dzielnica", col = "purple")
+
+interaction.plot(mieszkania$`typ budynku` ,mieszkania$pokoi,mieszkania$cena, xlab = "typ budynku", ylab = "cena mieszkania", trace.label = "l. pokoi", col = "blue")
+```
+<br/>
+Wykresy interakcji wskazuj¹ na to, ¿e mo¿e siê ona pojawiæ miêdzy typem budynku a dzielnic¹, co oznacza, ¿e cena mieszkania w niskim bloku w Sródmieœciu ró¿ni siê od ceny mieszkania w niskim bloku w dzielnicy Krzyki.<br/>
+
+###2.2 Hipotezy badawcze:
+Na podstawie powy¿szych obserwacji stawiam nastêpuj¹ce hipotezy:<br/>
+1. Cena bêdzie znacz¹co ró¿niæ siê w zale¿noœci od liczby pokoi w mieszkaniu. Im wiêksza liczba pokoi, tym wiêksza bêdzie cena mieszkania. <br/>
+2. Cena bêdzie znacz¹co ró¿niæ siê w zale¿noœci od dzielnicy. <br/>
+3. Cena bêdzie znacz¹co ró¿niæ siê w zale¿noœci od typu budynku. <br/>
+4. Cena mieszkania w niskim bloku w Œródmieœciu ró¿ni siê istotnie od ceny mieszkania w niskim bloku na Krzykach.<br/>
+
+###2.3 Przeprowadzenie badania
+
+####2.3.1 Wyniki ANOVY 3-czynnikowej dla danych dotycz¹cych mieszkañ: 
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#Anova trzyczynnikowa
+anova <- aov(mieszkania$cena ~  mieszkania$pokoi *  mieszkania$dzielnica *  mieszkania$`typ budynku`)
+a <- summary(anova)
+
+p_value <- a[[1]][["Pr(>F)"]]
+
+p_value <- t(p_value)
+
+p_value <-p_value[-8]
+czynniki <- c("l. pokoi", "dzielnica", "typ budynku", "l. pokoi - dzielnica","l. pokoi - typ budynku", "dzielnica - typ budyku", "l. pokoi - dzielnica - typ budynku")
+data.frame(czynniki,p_value)
+```
+<br/>
+Przedstawione wyniki œwiadcz¹ o tym, ¿e œrednie ceny w podgrupach dotycz¹cych liczby pokoi, dzielnicy oraz typu budynku ró¿ni¹ siê istotnie. Nie pojawi³ siê jednak efekt interakcji na poziomie istotnoœci 0.05. Gdyby przyj¹æ za poziom istotnoœci 0.1 to mo¿naby rozwa¿yæ jeszcze jednoczesny wp³yw dzielnicy i typu budynku. Jednak w celu potwierdzenia wiarygodnoœci ANOVY sprawdzê, czy jej za³o¿enia s¹ spe³nione.<br/> 
+
+####2.3.2 Za³o¿enia ANOVY
+1. Zmienna zale¿na ma wartoœci na skali przedzia³owej.<br/>
+2. Próbka zosta³a wybrana z populacji w sposób losowy.<br/>
+3. Elementy próby zosta³y przypisane do danych podgrup losowo.<br/>
+4. Wszystkie pomiary s¹ niezale¿ne.<br/>
+5. Dane w ka¿dej próbie maj¹ rozk³ad normalny.<br/>
+6. Wariancje w podgrupach s¹ równe.<br/>
+
+Zmienn¹ zale¿n¹ jest cena mieszkania, wiêc z pewnoœci¹ ma ona wartoœci na skali przedzia³owej.<br/>
+Zak³adam, ¿e próbki zosta³y wybrane z populacji losowo, losowo s¹ przypisane do danych podgrup i wszystkie wymiary s¹ niezale¿ne w zwi¹zku z obiektywnym charakterem zmiennych.<br/>
+Aby przekonaæ siê, czy jest sens badaæ normalnoœæ ka¿dej z podgrup, srawdzê ile ka¿da z nich posiada obserwacji. Je¿eli liczba obserwacji bêdzie mniejsza od 15, wynik testu normalnoœci mo¿e byæ niedok³adny, co potwierdza powy¿sza analiza mocy testów normalnoœci. W takim wypadku sprawdzê czy reszty maj¹ rozk³ad normalny.<br/>
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+#sprawdzenie liczebnoœci w podgrupach
+tapply(mieszkania$cena,mieszkania[,2:4], length)
+```
+<br/>Jedna z podgrup ma tylko 2 obserwacje, wiêc ciê¿ko by³oby zastosowaæ do niej test normalnoœci, a z kolei najliczniejsza posiada 11 obserwacji, wiêc sprawdzê zgodnoœæ rozk³adu reszt z rozk³adem normalnym. <br/>
+
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+#sprawdzenie za³o¿enia o normalnoœci 
+x <- anova$residuals
+shapiro.test(x)
+```
+
+Reszty pochodz¹ z rozk³adu normalnego, oznacza to, ¿e próbki s¹ pobrane z populacji o rozk³adzie normalnym.<br/>
+Nale¿y jeszcze sprawdziæ, czy wariancje w podgrupach s¹ jednorodne. W tym celu wykonam test Levene'a, który zak³ada jednorodnoœæ wariancji.<br/>
+
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+#sprawdzenie za³o¿enia wariancji
+mieszkania$pokoi <- as.factor(mieszkania$pokoi)
+mieszkania$dzielnica <- as.factor(mieszkania$dzielnica)
+mieszkania$`typ budynku` <- as.factor(mieszkania$`typ budynku`)
+
+leveneTest(mieszkania$cena ~., data = mieszkania)
+```
+
+P-value jest wiêksze od przyjêtego poziomu istotnoœci, co œwiadczy o spe³nieniu za³o¿enia dotycz¹cego jednorodnoœci wariancji w podgrupach.<br/>
+
+Skoro za³o¿enie normalnoœci i jednorodnoœci wariancji w grupach jest spe³nione, to nie mam podstaw, by s¹dziæ, ¿e ANOVA nie daje wiarygodnych wyników. Przeprowadzê w takim razie analizê dwuczynnikow¹ dla dzielnicy oraz typu budynku, aby potwierdziæ efekt interakcji.<br/>
+
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+#Anova dwuczynnikowa
+anova_dzielnica_typ <- aov(mieszkania$cena~mieszkania$dzielnica * mieszkania$`typ budynku`)
+b <- summary(anova_dzielnica_typ)
+
+p_value <- b[[1]][["Pr(>F)"]]
+
+p_value <- t(p_value)
+
+p_value <-p_value[-4]
+czynniki <- c( "dzielnica", "typ budynku","dzielnica - typ budyku")
+data.frame(czynniki,p_value)
+```
+<br/>
+Tym razem efekt interakcji dzielnicy i typu budynku zosta³ wykluczony. W takim razie dalsza analiza przyjmie postaæ trzech jednoczynnikowych analiz wariancji. <br/>
+
+####2.3.3 Testy post-hoc
+
+Aby dowiedzieæ siê, które œrednie z czynników grupuj¹cych ró¿ni¹ siê istotnie, przeprowadzê testy post-hoc. U¿yjê do tego testu Tukeya.<br/>
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+#post-hoc - pokoje
+anova_pokoje <- aov( mieszkania$cena ~  mieszkania$pokoi)
+apT <- TukeyHSD(anova_pokoje)
+plot(apT, las=1, col = "red")
+```
+<br/>
+Najwiêksza ró¿nica w œrednich cen wystêpuje miêdzy mieszkaniem 4 a 1-pokojowym. Ró¿nica ta wskazuje, i¿ mieszkanie 4-pokojowe mo¿e byæ dro¿sze od 1-pokojowego o 95 000 - 120 000 z³. Znacz¹ca ró¿nica jest równie¿ miêdzy cen¹ mieszkania 3 a 1-pokojowego (ok. 60 000 - 80 000 z³) oraz miêdzy cen¹ mieszkania 4 a 2-pokojowego (ok. 58 000 - 79 000 z³). Ró¿nice w cenach dla pozosta³ych kombinacji mieszkañ wynosz¹ mniej wiêcej 20 000 - 45 000 z³. Wszystkie ró¿nice s¹ istotne.<br/>
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+#post-hoc - dzielnice
+anova_typ_budynku <- aov( mieszkania$cena ~  mieszkania$`typ budynku`)
+atT <- TukeyHSD(anova_typ_budynku)
+plot(atT, las=0, col = "purple")
+```
+<br/>
+Wykres ró¿nic w œrednich cenach dotycz¹cy typu budynku wskazuje, ¿e cena mieszkania w wie¿owcu jest o ok. 10 000 - 40 000 z³ ni¿sza ni¿ cena mieszkañ w niskim bloku, co jest znacz¹c¹ ró¿nic¹. Ró¿nice w cenach mieszkañ w wie¿owcu i kamienicy oraz w kamienicy i niskim bloku nie s¹ istotne statystycznie.<br/>
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+#post-hoc - typ budynku
+anova_dzielnice <- aov( mieszkania$cena ~  mieszkania$dzielnica)
+adT <- TukeyHSD(anova_dzielnice)
+plot(adT, las=0, col = "blue")
+```
+<br/>
+Ceny mieszkañ w dzielnicy Krzyki s¹ o ok. 8 000 - 40 000 z³ tañsze ni¿ w dzielnicy Biskupin. A cena w dzielnicy Œródmieœcie jest ni¿sza o ok. 3 800 z³ od ceny w dzielnicy Biskupin. Ró¿nica cen w dzielnicach Œródmieœcie i Krzyki oscyluje w granicach 0, wiêc jest nieistotna statystycznie.<br/>
+
+####2.3.4 Efekty eksperymentalne
+
+W celu okreœlenia, w jakim stopniu zmienne objaœniaj¹ce wp³ywaj¹ na wyjaœnienie zmiennej objaœnianej zbadam wielkoœæ efektów eksperymentalnych (eta-kwadrat oraz omega-kwadrat). Eta-kwadrat objaœnia dane pochodz¹ce z próbki, a omega-kwadrat objaœnia dane pochodz¹ce z populacji.<br/>
+
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+#badanie efektów eksperymentalnych -pokoje
+a<-eta_sq(anova_pokoje)
+b<-omega_sq(anova_pokoje) 
+b <-b[-1]
+c <- data.frame(a,b)
+c[,1] = "liczba pokoi  "
+c %>% kable() %>% kable_styling()
+```
+<br/>
+Liczba pokoi w mieszkaniu objaœnia ich cenê w 79% w przypadku próbki i w 78.8% w przypadku populacji. Dla tej zmiennej œrednie by³y najbardziej ró¿ne od siebie, wiêc mo¿na by³o siê spodziewaæ najwiêkszych efektów eksperymentalnych. <br/>
+
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+#badanie efektów eksperymentalnych -dzielnice
+a<-eta_sq(anova_dzielnice)
+b<-omega_sq(anova_dzielnice) 
+b <-b[-1]
+c <- data.frame(a,b)
+c[,1] = "dzielnica  "
+c %>% kable() %>% kable_styling()
+```
+<br/>
+
+Dzielnica, w której znajduje siê mieszkanie objaœnia w nieznacznym stopniu jego cenê, gdy¿ jest to wartoœæ ok. 5% w przypadku próbki i ok. 4% w przypadku populacji. Zwa¿ywszy na ma³¹ istotnoœæ w ró¿nicy œrednich (0.006) mo¿emy siê spodziewaæ, ¿e efekty eksperymentalne nie bêd¹ spektakularne i w tym przypadku wynosz¹ jedynie 5%.<br/>
+
+```{r, echo=FALSE, message=FALSE, fig.align = 'center', out.extra='angle=90', warning=FALSE}
+#badanie efektów eksperymentalnych -typ budynku
+a<-eta_sq(anova_typ_budynku)
+b<-omega_sq(anova_typ_budynku) 
+b <-b[-1]
+c <- data.frame(a,b)
+c[,1] = "typ budynku  "
+c %>% kable() %>% kable_styling()
+```
+<br/>
+Typ budynku tak¿e nienajlepiej objaœnia cenê mieszkañ, poniewa¿ w przypadku próbki objaœnione jest ok. 6% danych, a dla populacji 5%. Œrednie ró¿nice w cenach mieszkañ dla typu budynku równie¿ nie s¹ znacz¹co istotne, co wyjaœnia niski poziom objaœnienia ceny przez typ budynku. <br/>
+
+###2.4 Wnioski
+
+Ceny mieszkañ we Wroc³awiu zale¿¹ w g³ownej mierze od liczby pokoi, o czym przekonuje w 79% eta-kwadrat w 78.8% omega-kwadrat. Im wiêcej pokoi jest w mieszkaniu, tym wiêksza jest jego cena, co jest zgodne z postawion¹ przeze mnie hipotez¹.<br/>
+Œrednie ceny mieszkañ w zale¿noœci od typu budynku ró¿ni¹ siê istotnie tylko w przypadku mieszkania w wie¿owcu i w niskim bloku, gdy¿ mieszkanie w niskim bloku jest dro¿sze od mieszkania w wie¿owcu.<br/>
+W przypadku dzielnic œrednie ceny ró¿ni¹ siê najbardziej dla mieszkañ w:
+
+* Biskupinie i w Krzykach - mieszkania w Biskupinie s¹ dro¿sze,
+
+* Œródmieœciu i Biskupinie - mieszkania w Biskupinie s¹ dro¿sze.
+
+Dwuczynnikowa analiza wariancji wykluczy³a efekt interakcji pomiêdzy typem budynku a dzielnic¹. <br/>
+W ostatecznym rozrachunku, kupuj¹c mieszkanie we Wroc³awiu najkorzystniej jest kierowaæ siê liczb¹ pokoi (z czym zapewne wi¹¿e siê powierzchnia mieszkania) oraz dzielnic¹. Typ budynku nie ma w tym przypadku a¿ tak wielkiego znaczenia.<br/>
+
