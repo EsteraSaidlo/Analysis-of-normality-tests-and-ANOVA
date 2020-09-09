@@ -5,7 +5,8 @@ The project consists of two parts:
 2. ANOVA
 
 # Normality tests - power comparison
-The assumption about normal distribution of variables is the basis of many classical modelling techniques, including variance analysis. 
+The assumption about normal distribution of variables is the basis of many classical modelling techniques, including variance analysis. Therefore, it is useful to know in which situations it is worthwhile to use particular tests.
+
 In the first part, the following normality tests were analysed:
 - Shapiro-Wilk test,
 - Jarque-Ber test,
