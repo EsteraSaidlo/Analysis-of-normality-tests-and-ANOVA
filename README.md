@@ -23,7 +23,7 @@ They have been tested on the basis of such distributions as:
 Hypotheses concerning selected normality tests were created based on available knowledge and density function charts.
 
 # ANOVA
-The analysis of variance allows to examine the impact of qualitative data on a quantitative or interval variable. Due to multi-factor ANOVA we can check the effect of interaction - simultaneous influence of several factors on the explained variable. With the help of post-hoc tests it is possible to check between which variables these interactions are. And by examining the strength of experimental effects it is possible to find out to what extent the analysis of variance explains the occurring relationships. 
+The analysis of variance allows to examine the impact of qualitative data on a quantitative or interval variable. Due to multi-factor ANOVA we can check the effect of interaction - simultaneous influence of several factors on the endogenous variable. With the help of post-hoc tests it is possible to check between which variables these interactions are. And by examining the strength of experimental effects it is possible to find out to what extent the analysis of variance explains the occurring relationships. 
 
 In this part, an analysis of variance was carried out based on data concerning apartment prices. The following variables were taken into account:
 - number of rooms,
